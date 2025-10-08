@@ -2,13 +2,14 @@
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QPushButton, QLabel, QSizePolicy
 )'''
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot, Signal, QThread
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
     QHBoxLayout, QPushButton, QLabel, QSizePolicy, QTextEdit
 )
+from PySide6.QtGui import QImage, QPixmap
 from Widgets.camera_widget import CameraWindow
-from Widgets.droidcam_widget import DroidCamWindow
+from Widgets.droidcam_widget import CameraWindowDroidCam, CameraWorker
 import sys
 import threading
 import webbrowser
@@ -17,7 +18,7 @@ import cv2
 from flask import Flask, request, render_template_string
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, url):
         super().__init__()
         self.setWindowTitle("Tree Category Detection Model")
         self.resize(320, 100)
@@ -53,6 +54,17 @@ class MainWindow(QMainWindow):
         self.info_box.setPlaceholderText("Status messages will appear here...")
         self.main_layout.addWidget(self.info_box)
 
+        layout = QVBoxLayout()
+        self.label = QLabel("No feed yet")
+        self.label.setScaledContents(True)
+        layout.addWidget(self.label)
+        self.setLayout(layout)
+        self.main_layout.addWidget(self.label)
+
+        # Thread + worker
+        self.worker_thread = None
+        self.worker = None
+
     # Methods for buttons
     def connect_pi_camera(self):
         print("PI Camera clicked")
@@ -66,7 +78,25 @@ class MainWindow(QMainWindow):
         self.info_box.append(text)
 
     def connect_droid_camera(self):
-        self.log_to_gui("🌐 Starting DroidCam setup via web interface...")
+
+        self.cam_window = CameraWindowDroidCam(url)
+        self.cam_window.show()
+        # Thread + worker
+        self.thread = QThread()
+        self.worker = CameraWorker(url)
+        self.worker.moveToThread(self.thread)
+
+        # Signals
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.frame_ready.connect(lambda f: print("Frame emitted:", f.shape))
+        self.worker.frame_ready.connect(self.update_frame)
+        self.worker.frame_ready.connect(self.cam_window.update_frame)
+
+        # Start
+        self.thread.start()
 
         HTML_PAGE = """
         <!DOCTYPE html>
@@ -103,6 +133,8 @@ class MainWindow(QMainWindow):
                     return "<h3>✅ Connected! You can close this page now.</h3>"
             return render_template_string(HTML_PAGE)
 
+        self.log_to_gui("🌐 Starting DroidCam setup via web interface...")
+     
         def run_server():
             app.run(host="0.0.0.0", port=8080, debug=False)
 
@@ -130,29 +162,38 @@ class MainWindow(QMainWindow):
     def _connect_to_droidcam(self, ip):
         self.log_to_gui(f"🔗 Connecting to DroidCam at {ip} ...")
         # url = f"http://{ip}:4747/video?640x480"
-        url = f"rtsp://{ip}:8080/h264.sdp"
+        url = f"http://{ip}:4747/video"
 
         cap = cv2.VideoCapture(url)
         if not cap.isOpened():
             self.log_to_gui(f"❌ Could not connect to {url}")
             return
-        while True:
-            ret, frame = cap.read()
-            print("Reading-Camera")
-            if not ret:
-                break
-            cv2.imshow("DroidCam", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+    
+        cap.release()
+        self.log_to_gui("✅ Connection successful — opening camera window.")
 
-        # cap.release()
 
-        # self.log_to_gui("✅ Connection successful — opening camera window.")
-        # self.cam_window = DroidCamWindow(url=url)
-        # self.cam_window.show()
+
+    @Slot(object)
+    def update_frame(self, frame):
+        print("Updating Frame")
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb.shape
+        bytes_per_line = ch * w
+        qt_img = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        self.label.setPixmap(QPixmap.fromImage(qt_img))
+
+    def closeEvent(self, event):
+        if self.worker:
+            self.worker.stop()
+        if self.thread:
+            self.thread.quit()
+            self.thread.wait()
+        event.accept()
 
 if __name__ == "__main__":
+    url = "http://192.168.1.48:4747/video"  # DroidCam IP stream
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindow(url)
     window.show()
     sys.exit(app.exec())

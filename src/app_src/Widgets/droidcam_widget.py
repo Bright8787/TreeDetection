@@ -6,7 +6,7 @@ import cv2
 
 
 class CameraWindowDroidCam(QWidget):
-    def __init__(self, url):
+    def __init__(self):
         super().__init__()
         self.setWindowTitle("DroidCam Feed")
         self.resize(480, 360)
@@ -17,7 +17,6 @@ class CameraWindowDroidCam(QWidget):
         self.label.setScaledContents(True)
         layout.addWidget(self.label)
         self.setLayout(layout)
-        self.url = url
 
     @Slot(object)
     def update_frame(self, frame):

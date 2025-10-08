@@ -1,0 +1,110 @@
+aceback (most recent call last):
+  File "/home/bright/TreeDetectionRepo/TreeDetection/src/app_src/python-gui.py", line 56, in connect_droid_camera
+    self.log_to_gui("🌐 Starting DroidCam setup via web interface...")
+    ^^^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'log_to_gui'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-
+
+
+
+
+
+
+
+   self.log_to_gui("🌐 Starting DroidCam setup via web interface...")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bright/TreeDetectionRepo/TreeDetection/src/app_src/python-gui.py", line 56, in log_to_gui
+    self.info_box.append(text)
+    ^^^^^^^^^^^^^
+AttributeError: 'MainWindow' object has no attribute 'info_box'
+
+
+* Debug mode: off
+Address already in use
+Port 8080 is in use by another program. Either identify and stop that program, or start the server with a different port.
+192.168.1.82 - - [08/Oct/2025 12:53:25] "GET / HTTP/1.1" 200 -
+192.168.1.82 - - [08/Oct/2025 12:53:25] "GET /favicon.ico HTTP/1.1" 404 -
+192.168.1.82 - - [08/Oct/2025 12:53:56] "POST / HTTP/1.1" 200 -
+[tcp @ 0x7fff280a3820] Connection to tcp://192.168.1.82:4747 failed: Connection refuse
+
+200 -
+Exception in thread Thread-5 (_connect_to_droidcam):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstr				
+
+
+TTP/1.1" 404 -
+192.168.1.48 - - [08/Oct/2025 13:02:59] "POST / HTTP/1.1" 200 -
+Exception in thread Thread-5 (_connect_to_droidcam):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bright/TreeDetectionRepo/TreeDetection/src/app_src/python-gui.py", line 140, in _connect_to_droidcam
+    self.cam_window = CameraWindow(source=url)
+                      ~~~~~~~~~~~~^^^^^^^^^^^^
+TypeError: CameraWindow.__init__() got an unexpected keyword argument 'source'
+
+
+TTP/1.1" 404 -
+192.168.1.48 - - [08/Oct/2025 13:02:59] "POST / HTTP/1.1" 200 -
+Exception in thread Thread-5 (_connect_to_droidcam):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bright/TreeDetectionRepo/TreeDetection/src/app_src/python-gui.py", line 140, in _connect_to_droidcam
+    self.cam_window = CameraWindow(source=url)
+                      ~~~~~~~~~~~~^^^^^^^^^^^^
+TypeError: CameraWindow.__init__() got an unexpected keyword argument 'source'
+TTP/1.1" 404 -
+192.168.1.48 - - [08/Oct/2025 13:02:59] "POST / HTTP/1.1" 200 -
+Exception in thread Thread-5 (_connect_to_droidcam):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bright/TreeDetectionRepo/TreeDetection/src/app_src/python-gui.py", line 140, in _connect_to_droidcam
+    self.cam_window = CameraWindow(source=url)
+                      ~~~~~~~~~~~~^^^^^^^^^^^^
+TypeError: CameraWindow.__init__() got an unexpected keyword argument 'source'
+TTP/1.1" 404 -
+192.168.1.48 - - [08/Oct/2025 13:02:59] "POST / HTTP/1.1" 200 -
+Exception in thread Thread-5 (_connect_to_droidcam):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/bright/TreeDetectionRepo/TreeDetection/src/app_src/python-gui.py", line 140, in _connect_to_droidcam
+    self.cam_window = CameraWindow(source=url)
+                      ~~~~~~~~~~~~^^^^^^^^^^^^
+TypeError: CameraWindow.__init__() got an unexpected keyword argument 'source'

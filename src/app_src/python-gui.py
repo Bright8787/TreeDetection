@@ -54,6 +54,8 @@ class MainWindow(QMainWindow):
         self.info_box.setPlaceholderText("Status messages will appear here...")
         self.main_layout.addWidget(self.info_box)
 
+        self.cam_window_droid = CameraWindowDroidCam()
+
         # layout = QVBoxLayout()
         # self.label = QLabel("No feed yet")
         # self.label.setScaledContents(True)
@@ -78,10 +80,6 @@ class MainWindow(QMainWindow):
         self.info_box.append(text)
 
     def connect_droid_camera(self):
-
-        self.cam_window = CameraWindowDroidCam()
-        self.cam_window.show()
-
 
         HTML_PAGE = """
         <!DOCTYPE html>
@@ -142,23 +140,8 @@ class MainWindow(QMainWindow):
             "After entering your DroidCam IP on the phone, the stream will appear here."
         )
         self.log_to_gui(message)
+        
 
-        # Thread + worker
-        self.thread = QThread()
-        self.worker = CameraWorker(self.droid_ip)
-        self.worker.moveToThread(self.thread)
-
-        # Signals
-        self.thread.started.connect(self.worker.run)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.finished.connect(self.worker.deleteLater)
-        self.thread.finished.connect(self.thread.deleteLater)
-        self.worker.frame_ready.connect(lambda f: print("Frame emitted:", f.shape))
-        self.worker.frame_ready.connect(self.update_frame)
-        self.worker.frame_ready.connect(self.cam_window.update_frame)
-
-        # Start
-        self.thread.start()
 
 
     def _connect_to_droidcam(self, ip):
@@ -172,6 +155,24 @@ class MainWindow(QMainWindow):
             return
     
         cap.release()
+
+        self.cam_window_droid.show()
+        # Thread + worker
+        self.thread = QThread()
+        self.worker = CameraWorker(url)
+        self.worker.moveToThread(self.thread)
+
+        # Signals
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.frame_ready.connect(lambda f: print("Frame emitted:", f.shape))
+        self.worker.frame_ready.connect(self.update_frame)
+        self.worker.frame_ready.connect(self.cam_window_droid.update_frame)
+
+        # Start
+        self.thread.start()
         self.log_to_gui("✅ Connection successful — opening camera window.")
 
     @Slot(object)

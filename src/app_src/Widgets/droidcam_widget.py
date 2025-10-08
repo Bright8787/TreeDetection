@@ -20,7 +20,7 @@ class DroidCamWindow(QWidget):
         self.setLayout(layout)
 
         # Initialize camera capture from URL
-        self.cap = cv2.VideoCapture(url)
+        self.cap = cv2.VideoCapture(url, cv2.CAP_FFMPEG)
         # self.cap = cv2.VideoCapture("http://192.168.1.48:4747/video")
 
         if not self.cap.isOpened():
@@ -35,19 +35,16 @@ class DroidCamWindow(QWidget):
 
     def update_frame(self):
         ret, frame = self.cap.read()
-        if ret and frame is not None:
-            print("Getting Frame")
-            # Convert BGR (OpenCV) to RGB (Qt)
-            # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = frame.shape
-            bytes_per_line = ch * w
-            qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-            self.label.setPixmap(QPixmap.fromImage(qt_image))
-        else:
-            # Optional: show black screen or message if no frame
-            black_frame = QImage(470, 310, QImage.Format_RGB888)
-            black_frame.fill(Qt.GlobalColor.black)
-            self.label.setPixmap(QPixmap.fromImage(black_frame))
+        if not ret or frame is None:
+            print("❌ No frame received")
+            return
+
+        print(f"✅ Got frame of shape: {frame.shape}")
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        h, w, ch = frame.shape
+        bytes_per_line = ch * w
+        qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        self.label.setPixmap(QPixmap.fromImage(qt_image))
 
     def closeEvent(self, event):
         self.timer.stop()

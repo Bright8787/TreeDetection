@@ -55,14 +55,7 @@ class MainWindow(QMainWindow):
         self.main_layout.addWidget(self.info_box)
 
         self.cam_window_droid = CameraWindowDroidCam()
-
-        # layout = QVBoxLayout()
-        # self.label = QLabel("No feed yet")
-        # self.label.setScaledContents(True)
-        # layout.addWidget(self.label)
-        # self.setLayout(layout)
-        # self.main_layout.addWidget(self.label)
-
+       
         # Thread + worker
         self.worker_thread = None
         self.worker = None
@@ -168,21 +161,21 @@ class MainWindow(QMainWindow):
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
         self.worker.frame_ready.connect(lambda f: print("Frame emitted:", f.shape))
-        self.worker.frame_ready.connect(self.update_frame)
+        # self.worker.frame_ready.connect(self.update_frame)
         self.worker.frame_ready.connect(self.cam_window_droid.update_frame)
 
         # Start
         self.thread.start()
         self.log_to_gui("✅ Connection successful — opening camera window.")
 
-    @Slot(object)
-    def update_frame(self, frame):
-        print("Updating Frame")
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb.shape
-        bytes_per_line = ch * w
-        qt_img = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        self.label.setPixmap(QPixmap.fromImage(qt_img))
+    # @Slot(object)
+    # def update_frame(self, frame):
+    #     print("Updating Frame")
+    #     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #     h, w, ch = rgb.shape
+    #     bytes_per_line = ch * w
+    #     qt_img = QImage(rgb.data, w, h, bytes_per_line, QImage.Format_RGB888)
+    #     # self.label.setPixmap(QPixmap.fromImage(qt_img))
 
     def closeEvent(self, event):
         if self.worker:

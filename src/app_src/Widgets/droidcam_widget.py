@@ -180,10 +180,10 @@ class CameraWorker(QObject):
         cap = cv2.VideoCapture(self.url)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 200)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 200)
-        if not cap.isOpened():
+        while not cap.isOpened():
             print(f"Could not open camera: {self.url}")
-            self.finished.emit()
-            return
+            # self.finished.emit()
+            # return
 
         print(f"✅ Connected to {self.url}")
         while self.running:

@@ -30,6 +30,7 @@ flammability_dict = {
         "index": 5,
         "description": "Very high flammability. Resin and needles ignite easily; maintain wide clearance."
     }
+    
 }
 
 # Example usage
@@ -50,10 +51,8 @@ class CameraWindow(QWidget):
         # self.resize(470, 310)
         # self.adjustSize()
         self.layout = QVBoxLayout()
-        self.current_overlay_text = ""
+        self.current_overlay_text = "No tree found! Please try again!"
 
-        # self.layout.setContentsMargins(0, 0, 0, 0)   
-        # layout.setSpacing(0)        
         self.layout.setAlignment(Qt.AlignCenter)  # 🔹 ensure top-left alignment
         
         self.label = QLabel()
@@ -67,7 +66,7 @@ class CameraWindow(QWidget):
         self.overlay_label = QLabel(self.label)
         self.overlay_label.setWordWrap(True)
         self.overlay_label.setStyleSheet(
-            "background-color: rgba(0,0,0,150); color: white; padding: 10px; border-radius: 5px;"
+            "background-color: rgba(0,0,0,150); color: white; padding: 10px; border-radius: 5px; margin: 5px"
         )
 
         
@@ -98,35 +97,32 @@ class CameraWindow(QWidget):
         QShortcut(QKeySequence("Esc"), self, self.close)
         # self.shortcut.activated.connect(self.closeEvent)
 
-    def show_description(self):
+    def show_description(self, pred_label, conf):
 
+        overlay_text = pred_label
         if(not self.overlay_state): 
-            frame = self.picam2.capture_array()
-            #cv2.ROTATE_270_CLOCKWISE
-            frame = cv2.rotate(frame, cv2.ROTATE_180)
-            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+            if(conf <= 0.7):
+                if(self.current_overlay_text != "No tree found! Please try again!"):
+                    self.overlay_label.setText("No tree found! Please try again!")
+                    # self.overlay_label.setText("")
 
-            results = self.model.predict(frame, verbose=False)
-            pred_label = results[0].names[results[0].probs.top1]  # top-1 class name
-            conf = results[0].probs.top1conf.item()
-
-            if(conf < 0.9):
-                self.overlay_label.setText("No tree found! Please try again!")
             else: 
-                # self.overlay_label.setText(get_flammability("pyracantha"))
-                self.overlay_label.setText(get_flammability(pred_label.lower()))
+                if(self.current_overlay_text != overlay_text):
+                    self.overlay_label.setText(get_flammability(pred_label.lower()))
+
 
             self.adjustSize()
             self.center_description()
             self.overlay_state = True
             # self.current_overlay_text = get_flammability(pred_label.lower())
-            self.show_btn.setText("Close description")
+            # self.show_btn.setText("Close description")
         else: 
-            self.overlay_label.hide()
-            self.show_btn.setText("Show description")
+            # self.overlay_label.hide()
+            # self.show_btn.setText("Show description")
             # self.current_overlay_text = ""
             self.overlay_state = False
 
+        self.current_overlay_text = overlay_text
 
     def center_description(self):
 
@@ -137,7 +133,7 @@ class CameraWindow(QWidget):
         overlay_height = self.overlay_label.height()
         self.overlay_label.move(
             (parent_width - overlay_width) / 2,
-            (parent_height - overlay_height) / 2
+            (parent_height - overlay_height) 
         )
 
         # self.adjustSize()
@@ -153,15 +149,17 @@ class CameraWindow(QWidget):
         pred_label = results[0].names[results[0].probs.top1]  # top-1 class name
         conf = results[0].probs.top1conf.item()
         frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        if(conf > 0.9):
+        if(conf > 0.7):
             cv2.putText(frame_bgr, f"{pred_label} ({conf:.2f})", (20, 40),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-            self.show_description()
-        
+        else: 
+            pred_label = ""
+
         frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         h, w, ch = frame.shape
         bytes_per_line = ch * w
         qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        self.show_description(pred_label, conf)
         self.label.setPixmap(QPixmap.fromImage(qt_image))
         self.label.setScaledContents(True)
 

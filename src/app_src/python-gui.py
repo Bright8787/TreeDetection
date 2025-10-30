@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(self.main_layout)
 
         # Top label
-        top_widget = QLabel("Tree Category Detection")
+        top_widget = QLabel("BotanIdent")
         top_widget.setStyleSheet("font-size: 24px; font-weight: bold;")
         top_widget.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.main_layout.addWidget(top_widget)
@@ -54,12 +54,36 @@ class MainWindow(QMainWindow):
         self.info_box.setPlaceholderText("Status messages will appear here...")
         self.main_layout.addWidget(self.info_box)
 
+        # --- HIER NEUEN CODE FÜR DAS LOGO EINFÜGEN ---
+        try:
+            # 1. Label erstellen
+            self.logo_label = QLabel()
+            self.logo_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+            # 2. Bild laden (Datei 'logo.png' muss im Skript-Ordner liegen)
+            logo_pixmap = QPixmap("Window/logo.png")
+
+            # 3. Skalieren (optional, z.B. auf 100x100)
+            scaled_pixmap = logo_pixmap.scaled(100, 100, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+
+            # 4. Bild setzen
+            self.logo_label.setPixmap(scaled_pixmap)
+
+            # 5. Label zum Haupt-Layout hinzufügen (es erscheint jetzt unten)
+            self.main_layout.addWidget(self.logo_label)
+
+        except Exception as e:
+            # Fehlerbehandlung
+            print(f"Fehler beim Laden des Logos: {e}")
+        # -----------------------------------------------
+
         self.cam_window_droid = CameraWindowDroidCam()
-       
+
         # Thread + worker
         self.worker_thread = None
         self.worker = None
 
+        self.showFullScreen()
     # Methods for buttons
     def connect_pi_camera(self):
         print("PI Camera clicked")
@@ -110,7 +134,7 @@ class MainWindow(QMainWindow):
             return render_template_string(HTML_PAGE)
 
         self.log_to_gui("🌐 Starting DroidCam setup via web interface...")
-     
+
         def run_server():
             app.run(host="0.0.0.0", port=8080, debug=False)
 
@@ -133,7 +157,7 @@ class MainWindow(QMainWindow):
             "After entering your DroidCam IP on the phone, the stream will appear here."
         )
         self.log_to_gui(message)
-        
+
 
 
 
@@ -146,7 +170,7 @@ class MainWindow(QMainWindow):
         if not cap.isOpened():
             self.log_to_gui(f"❌ Could not connect to {url}")
             return
-    
+
         cap.release()
 
         self.cam_window_droid.show()

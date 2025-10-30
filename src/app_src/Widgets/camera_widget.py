@@ -7,40 +7,63 @@ import sys
 from ultralytics import YOLO
 import os
 import cv2
+import math
 
-# Flammability dictionary
-flammability_dict = {
+# NEUE DATENSTRUKTUR: Faktoren für die Brennbarkeitsformel
+# V = Volatile Öle, S = Surface-to-Volume, D = Dichte
+FLAMMABILITY_FACTORS = {
     "viburnum": {
-        "index": 1,
-        "description": "Very low flammability. Excellent for fire-resistant landscaping."
+        "V": 0.1, "S": 0.5, "D": 0.6,
+        "description": "Sehr geringe Brennbarkeit. Hervorragend geeignet für den Brandschutz."
     },
     "quercus": {
-        "index": 2,
-        "description": "Low to moderate flammability. Safer when green, but leaf litter can burn."
+        "V": 0.2, "S": 0.3, "D": 0.9,
+        "description": "Geringe bis moderate Brennbarkeit. Sichere Wahl im grünen Zustand."
     },
     "arbutus": {
-        "index": 3,
-        "description": "Moderate flammability. Waxy leaves and peeling bark; spacing recommended."
+        "V": 0.4, "S": 0.5, "D": 0.5,
+        "description": "Moderate Brennbarkeit. Gewachste Blätter und rissige Rinde."
     },
     "pyrancanthan": {
-        "index": 4,
-        "description": "High flammability. Dense, twiggy growth and oils make it burn fast."
+        "V": 0.6, "S": 0.8, "D": 0.4,
+        "description": "Hohe Brennbarkeit. Dichtes, harziges Wachstum brennt schnell."
     },
     "pinus": {
-        "index": 5,
-        "description": "Very high flammability. Resin and needles ignite easily; maintain wide clearance."
+        "V": 0.9, "S": 0.7, "D": 0.3,
+        "description": "Sehr hohe Brennbarkeit. Harz und Nadeln entzünden sich leicht."
     }
-
 }
-
 # Example usage
-def get_flammability(plant_type):
-    info = flammability_dict.get(plant_type.lower())
-    if info:
-        return f"Flammability Index: {info['index']}, Description: {info['description']}"
-    else:
-        return "Plant type not found."
+# NEUE FUNKTION: Berechnet den Flammbarkeits-Grad (Index und Farbe)
+def calculate_flammability(plant_type, moisture=0.5, k=100):
+    """
+    Berechnet den Flammbarkeits-Index F basierend auf der Formel: F = k * (V * S) / (sqrt(M) * D)
+    Gibt Index (1-5) und zugehörige CSS-Farbe zurück.
+    """
+    data = FLAMMABILITY_FACTORS.get(plant_type.lower())
+    if not data:
+        return 0, "#7f8c8d" # Grau für unbekannt
 
+    V = data["V"]
+    S = data["S"]
+    D = data["D"]
+
+    # Sicherstellen, dass M und D > 0 sind
+    if D == 0 or moisture == 0:
+         F = 100
+    else:
+        F = k * (V * S) / (math.sqrt(moisture) * D)
+
+    F = min(F, 100) # Beschränken auf max. 100
+
+    # 1. Index bestimmen und 2. Farbe zuweisen
+    if F < 20: index, color = 1, "#2ecc71"  # Grün (Sehr gering)
+    elif F < 40: index, color = 2, "#3498db" # Blau (Gering)
+    elif F < 60: index, color = 3, "#f1c40f" # Gelb (Mittel)
+    elif F < 80: index, color = 4, "#e67e22" # Orange (Hoch)
+    else: index, color = 5, "#e74c3c" # Rot (Sehr hoch)
+
+    return index, color
 
 
 # Camera feed window
@@ -74,16 +97,39 @@ class CameraWindow(QWidget):
             self.logo_label.setStyleSheet("font-size: 14px; font-weight: bold; padding: 5px;")
 
 
-        # 2. Zurück-Button-Setup (Rechts)
+        # 2. Grad-Balken (Mitte) - HIER IST DIE KORREKTUR
+        self.grade_widgets = []
+        grade_layout = QHBoxLayout()
+        grade_layout.setSpacing(2)
+
+        # Erstelle 5 Labels (Kacheln) für die Grade 1 bis 5
+        for i in range(1, 6):
+            grade_widget = QLabel(str(i))
+            grade_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            grade_widget.setFixedSize(30, 30)
+            grade_widget.setStyleSheet(
+                "background-color: #34495e; color: white; font-weight: bold; border: 1px solid #7f8c8d; border-radius: 4px;"
+            )
+            self.grade_widgets.append(grade_widget)
+            grade_layout.addWidget(grade_widget)
+
+        # Ein Container-Widget für das zentrale Layout
+        self.grade_container = QWidget()
+        self.grade_container.setLayout(grade_layout)
+
+        # 3. Zurück-Button-Setup (Rechts)
         self.back_button = QPushButton("↩ Zurück")
         self.back_button.clicked.connect(self.close)
         self.back_button.setStyleSheet("padding: 5px 10px; font-size: 16px; max-width: 150px;")
 
-        # 3. Horizontales Layout zusammenstellen
+        # 4. Horizontales Layout zusammenstellen
+        # 4. Horizontales Layout zusammenstellen
         top_layout = QHBoxLayout()
-        top_layout.addWidget(self.logo_label)  # Logo ist links
-        top_layout.addStretch(1)               # Stretch füllt den gesamten mittleren Raum
-        top_layout.addWidget(self.back_button) # Button wird nach rechts geschoben
+        top_layout.addWidget(self.logo_label)  # Links
+        top_layout.addStretch(1)
+        top_layout.addWidget(self.grade_container) # Grad-Balken
+        top_layout.addStretch(1)
+        top_layout.addWidget(self.back_button) # Rechts
 
         self.layout.addLayout(top_layout)
         # ----------- NEUE TOP-LEISTE ENDE -----------
@@ -134,27 +180,28 @@ class CameraWindow(QWidget):
         # self.shortcut.activated.connect(self.closeEvent)
 
     def show_description(self, pred_label, conf):
-            """Aktualisiert den Text und steuert die Sichtbarkeit des Overlays."""
+        """Steuert die Anzeige des Overlays: Nur Anweisung bei niedriger Konfidenz, ansonsten verstecken."""
 
-            # Nur anzeigen, wenn die Konfidenz hoch genug ist (z.B. > 0.7)
-            if conf > 0.7:
-                # 1. Text bestimmen
-                new_text = get_flammability(pred_label.lower())
+        # Schwellenwert für NICHTS gefunden
+        if conf <= 0.7:
+            instruction_text = "Bitte bewegen Sie die Kamera oder passen Sie den Abstand zum Baum an."
 
-                # 2. Text nur bei Änderung aktualisieren (gut für Performance)
-                if self.current_overlay_text != new_text:
-                    self.overlay_label.setText(new_text)
-                    self.current_overlay_text = new_text
+            # Text nur aktualisieren und zeigen, wenn eine Änderung vorliegt
+            if self.current_overlay_text != instruction_text:
+                self.overlay_label.setText(instruction_text)
+                self.current_overlay_text = instruction_text
 
-                # 3. Das Overlay zeigen und zentrieren
-                self.center_description()
-                self.overlay_label.show()
-            else:
-                # 4. Bei niedriger Konfidenz oder keinem Ergebnis: Overlay verstecken
-                # Wir setzen current_overlay_text zurück, damit beim nächsten Fund der Text aktualisiert wird
-                if self.overlay_label.isVisible():
-                    self.overlay_label.hide()
-                self.current_overlay_text = "" # Wichtig, damit der nächste Fund erkannt wird
+            # Zeigt das Overlay mittig an
+            self.center_description()
+            self.overlay_label.show()
+
+        else:
+            # Bei erfolgreicher Erkennung (conf > 0.7): Overlay ausblenden
+            if self.overlay_label.isVisible():
+                self.overlay_label.hide()
+            # current_overlay_text zurücksetzen, damit die Anweisung beim nächsten Mal sofort angezeigt wird
+            self.current_overlay_text = ""
+
     def center_description(self):
         """Passt die Größe des Overlays an den Text an und zentriert es auf dem Kamerabild."""
 
@@ -170,33 +217,58 @@ class CameraWindow(QWidget):
         self.overlay_label.move(
             (parent_width - overlay_width) / 2,
             # Positioniere es etwas oberhalb des unteren Randes
-            parent_height - overlay_height - 10
+            (parent_height - overlay_height) / 2
         )
         # NICHT self.overlay_label.show() hier aufrufen, da es in show_description gesteuert wird
-        
+
     def update_frame(self):
-        frame = self.picam2.capture_array()
-        # frame = cv2.rotate(frame, cv2.ROTATE_270_CLOCKWISE)
-        frame = cv2.rotate(frame, cv2.ROTATE_180)
-        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+            frame = self.picam2.capture_array()
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
+            frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
-        results = self.model.predict(frame, verbose=False)
-        pred_label = results[0].names[results[0].probs.top1]  # top-1 class name
-        conf = results[0].probs.top1conf.item()
-        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        if(conf > 0.7):
-            cv2.putText(frame_bgr, f"{pred_label} ({conf:.2f})", (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        else:
-            pred_label = ""
+            results = self.model.predict(frame, verbose=False)
+            pred_label = results[0].names[results[0].probs.top1]  # top-1 class name
+            conf = results[0].probs.top1conf.item()
+            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # Konvertierung für CV2-Text
 
-        frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        h, w, ch = frame.shape
-        bytes_per_line = ch * w
-        qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        self.show_description(pred_label, conf)
-        self.label.setPixmap(QPixmap.fromImage(qt_image))
-        self.label.setScaledContents(True)
+            flam_index = 0
+
+            # Logik zur Grad-Anzeige und Farbmarkierung
+            if conf > 0.7:
+                # 1. Berechne Grad und Farbe
+                flam_index, flam_color = calculate_flammability(pred_label)
+
+                # 2. Baumname auf das Video zeichnen
+                cv2.putText(frame_bgr, f"{pred_label} ({conf:.2f})", (20, 40),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            else:
+                pred_label = ""
+
+            # 3. Kacheln färben: Setze alle zurück und markiere nur den aktuellen Index (falls vorhanden)
+            DEFAULT_STYLE = "background-color: #34495e; color: white; font-weight: bold; border: 1px solid #7f8c8d; border-radius: 4px;"
+
+            for i, widget in enumerate(self.grade_widgets):
+                widget_grade = i + 1 # Grade sind 1 bis 5
+
+                if widget_grade == flam_index:
+                    # Aktuellen Grad markieren (hellere Farbe, dickerer Rand)
+                    widget.setStyleSheet(
+                        f"background-color: {flam_color}; color: black; font-weight: bold; border: 2px solid white; border-radius: 4px;"
+                    )
+                else:
+                    # Alle anderen Kacheln zurücksetzen
+                    widget.setStyleSheet(DEFAULT_STYLE)
+
+
+            frame = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB) # Korrektur für Qt-Anzeige
+            h, w, ch = frame.shape
+            bytes_per_line = ch * w
+            qt_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+            self.show_description(pred_label, conf) # Steuert die Anweisung in der Mitte
+
+            self.label.setPixmap(QPixmap.fromImage(qt_image))
+            self.label.setScaledContents(True)
 
     # without button
     # def update_frame(self):

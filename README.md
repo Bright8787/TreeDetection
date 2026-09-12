@@ -1,6 +1,6 @@
 # TreeDetection (BotanIdent)
 
-A Raspberry Pi 5 desktop application that identifies tree species from a live camera feed and estimates the tree's flammability. Built for TUB, it runs full-screen on an LCD touchscreen and uses a YOLO model trained to classify four species: **Pinus**, **Quercus**, **Arbutus**, **Pyracantha** and **Viburnum**.
+A Raspberry Pi 5 desktop application that identifies tree species from a live camera feed and estimates the tree's flammability. It runs full-screen on an LCD touchscreen and uses a YOLO model trained to classify four species: **Pinus**, **Quercus**, **Arbutus**, **Pyracantha** and **Viburnum**.
 
 ## How it works
 
@@ -33,7 +33,7 @@ requirement.txt             # Full pip freeze from the Raspberry Pi environment
 
 ## Running the app
 
-On the Raspberry Pi, with the virtual environment set up (The path is hardcoded and should be adjust):
+On the Raspberry Pi, with the virtual environment set up (The path is hardcoded and should be adjusted):
 
 ```bash
 cd src/app_src

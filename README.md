@@ -22,7 +22,6 @@ src/
       treeDetection.pt      # Trained YOLO classification model weights
     Window/
       Main.qml, logo.png    # QML/logo assets
-  test/                     # Ad-hoc scripts used during development/testing
 requirement.txt             # Full pip freeze from the Raspberry Pi environment
 ```
 

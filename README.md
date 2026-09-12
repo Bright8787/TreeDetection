@@ -1,6 +1,6 @@
 # TreeDetection (BotanIdent)
 
-A Raspberry Pi 5 desktop application that identifies tree species from a live camera feed and estimates the tree's flammability. It runs full-screen on an LCD touchscreen and uses a YOLO model trained to classify four species: **Pinus**, **Quercus**, **Arbutus**, **Pyracantha** and **Viburnum**.
+A Raspberry Pi 5 desktop application that identifies tree species from a live camera feed and estimates the tree's flammability. It runs full-screen on an LCD touchscreen and uses a YOLO model trained to classify five species: **Pinus**, **Quercus**, **Arbutus**, **Pyracantha** and **Viburnum**.
 
 ## How it works
 
